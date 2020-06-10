@@ -1,0 +1,111 @@
+---
+title: "126 final project"
+author: "Rebecca Ji, Cindy Liu, Linna He"
+date: "2020/6/8"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+link to the data set: https://archive.ics.uci.edu/ml/datasets/student%2Bperformance#
+
+
+1. Title Page (Cover page): Must include the title of your project, and the names of all group members.
+
+
+2. Abstract (100 words): Brief summary of your project, including what questions are inves- tigated and your findings.
+
+
+3. Problem and Motivation (200 words): In this section you should describe (i) the relevant background of the data set and (ii) the motivation for your project i.e., why your readers should be interested.
+
+Our data set is collected and created by Paulo Cortez, a professor working at University of Minho in Portugal. Over the last decades, the education level of Portuguese schools is at Europe’s tail because of its high student failure rate, even though it’s improving over time. In 2014, Paulo Cortez tried to explore why G2 and G3 students have high failure rates for 2 core classes in Portugal school, which are Mathematics and the Portuguese language. There are 649 subjects in the data set and 33 different attributes: all of the data were collected by using school reports and questionnaires. We consider our data set to be unbiased and random since it doesn’t benefit the schools if they lied in those reports. In addition, there are no missing values in this data set.
+
+Although student achievement is highly influenced by their past evaluations, we believe that conducting an explanatory analysis would unpack other relevant features from the data set (e.g. number of absences, parent’s education, alcohol consumption). One of our goals is to find a series of linear regression models which effectively reflect the variables interacting with students’ failures. As a direct outcome of this research, more powerful and productive student prediction tools can be developed, improving the quality of education and enhancing school resource management.
+
+
+4. Data: Briefly state the source of your data and describe the relevant variables that you will use in your project.
+
+
+5. Questions of Interest: Describe in plain English the questions that your analysis will answer. Scientific, not statistical, terminology should be used here. For example, words like ‘association’, ‘effect’, or ‘relationship’ are okay ,while ‘p-value’, ‘coefficient,’ or ‘regression’ are not.
+
+6. Regression Methods:
+
+7. Regression Analysis, Results and Interpretation: 
+
+8. Conclusions (200 words):
+
+9. Appendices:
+
+
+```{r}
+#importing data
+d1=read.table("student-mat.csv",sep=";",header=TRUE)
+```
+
+```{r}
+attach(d1)
+#Variable selection I
+#forward selection with aic
+mod.0 <- lm(G3~1, data=d1)
+mod.full <- lm(G3 ~., data=d1) 
+step(mod.0, scope=list(lower=mod.0, upper=mod.full), direction = "forward", trace=0)
+#result: G3 ~ G2 + famrel + absences + G1 + age + activities + Walc + romantic + school
+
+#forward selection with bic
+n <- length(d1$G3)
+step(mod.0,scope = list(lower=mod.0,upper=mod.full), direction = "forward", k=log(n),trace=0)
+#result: G3 ~ G2 + famrel + absences + G1 + age
+
+#backward selection with aic
+step(mod.full, scope=list(lower=mod.0, upper=mod.full), direction = "backward", trace=0)
+#result: G3 ~ school + age + activities + romantic + famrel + Walc + absences + G1 + G2
+
+#backward selection with bic
+step(mod.full, scope=list(lower=mod.0, upper=mod.full), direction = "backward", k=log(n),trace=0)
+#result: G3 ~ age + famrel + absences + G1 + G2
+
+#stepwise selection
+step(mod.0,scope = list(lower=mod.0,upper=mod.full),trace=0)
+#result: G3 ~ G2 + famrel + absences + G1 + age + activities + Walc + romantic + school
+
+```
+
+```{r}
+#scattor plot
+pairs(~G3 + G2 + famrel + absences + G1 + age + activities + Walc + romantic + school)
+#There might be linear relationship between G3 and G1, G2 and G1, and G2 and G3.
+```
+
+```{r}
+#Variable selection II
+library(leaps)
+mod.reg <- regsubsets(cbind(G2, famrel, absences, G1, age, activities, Walc, romantic, school),G3, data=d1)
+summary.reg<- summary(mod.reg)
+summary.reg$which
+
+#by plots
+par(mfrow = c(2, 2))
+plot(summary.reg$rsq, xlab = "Number of Variables", ylab = "RSq", type = "b")
+
+plot(summary.reg$adjr2, xlab = "Number of Variables", ylab = "Adjusted RSq", type = "b")
+best_adj_r2 = which.max(summary.reg$adjr2)
+points(best_adj_r2, summary.reg$adjr2[best_adj_r2],
+       col = "red",cex = 2, pch = 20)
+
+plot(summary.reg$cp, xlab = "Number of Variables", ylab = "Cp", type = 'b')
+best_cp = which.min(summary.reg$cp[-c(length(summary.reg$cp))])
+points(best_cp, summary.reg$cp[best_cp],
+       col = "red", cex = 2, pch = 20)
+
+plot(summary.reg$bic, xlab = "Number of Variables", ylab = "BIC", type = 'b')
+best_bic = which.min(summary.reg$bic)
+points(best_bic, summary.reg$bic[best_bic],
+       col = "red", cex = 2, pch = 20)
+
+```
+
+
