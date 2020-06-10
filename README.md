@@ -30,3 +30,29 @@ pairs(~G3 + G2 + famrel + absences + G1 + age + activities + Walc + romantic + s
 #There might be linear relationship between G3 and G1, G2 and G1, and G2 and G3.
 
 
+#Variable selection II
+library(leaps)
+mod.reg <- regsubsets(cbind(G2, famrel, absences, G1, age, activities, Walc, romantic, school),G3, data=d1)
+summary.reg<- summary(mod.reg)
+summary.reg$which
+
+#by plots
+par(mfrow = c(2, 2))
+plot(summary.reg$rsq, xlab = "Number of Variables", ylab = "RSq", type = "b")
+
+plot(summary.reg$adjr2, xlab = "Number of Variables", ylab = "Adjusted RSq", type = "b")
+best_adj_r2 = which.max(summary.reg$adjr2)
+points(best_adj_r2, summary.reg$adjr2[best_adj_r2],
+       col = "red",cex = 2, pch = 20)
+
+plot(summary.reg$cp, xlab = "Number of Variables", ylab = "Cp", type = 'b')
+best_cp = which.min(summary.reg$cp[-c(length(summary.reg$cp))])
+points(best_cp, summary.reg$cp[best_cp],
+       col = "red", cex = 2, pch = 20)
+
+plot(summary.reg$bic, xlab = "Number of Variables", ylab = "BIC", type = 'b')
+best_bic = which.min(summary.reg$bic)
+points(best_bic, summary.reg$bic[best_bic],
+       col = "red", cex = 2, pch = 20)
+
+
