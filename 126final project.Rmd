@@ -14,76 +14,55 @@ knitr::opts_chunk$set(echo = TRUE)
 link to the data set: https://archive.ics.uci.edu/ml/datasets/student%2Bperformance#
 
 
-1. Title Page (Cover page): Must include the title of your project, and the names of all group members.
-
-
-2. Abstract (100 words): Brief summary of your project, including what questions are inves- tigated and your findings.
-
-
-3. Problem and Motivation (200 words): In this section you should describe (i) the relevant background of the data set and (ii) the motivation for your project i.e., why your readers should be interested.
-
-Our data set is collected and created by Paulo Cortez, a professor working at University of Minho in Portugal. Over the last decades, the education level of Portuguese schools is at Europe’s tail because of its high student failure rate, even though it’s improving over time. In 2014, Paulo Cortez tried to explore why G2 and G3 students have high failure rates for 2 core classes in Portugal school, which are Mathematics and the Portuguese language. There are 649 subjects in the data set and 33 different attributes: all of the data were collected by using school reports and questionnaires. We consider our data set to be unbiased and random since it doesn’t benefit the schools if they lied in those reports. In addition, there are no missing values in this data set.
-
-Although student achievement is highly influenced by their past evaluations, we believe that conducting an explanatory analysis would unpack other relevant features from the data set (e.g. number of absences, parent’s education, alcohol consumption). One of our goals is to find a series of linear regression models which effectively reflect the variables interacting with students’ failures. As a direct outcome of this research, more powerful and productive student prediction tools can be developed, improving the quality of education and enhancing school resource management.
-
-
-4. Data: Briefly state the source of your data and describe the relevant variables that you will use in your project.
-
-
-5. Questions of Interest: Describe in plain English the questions that your analysis will answer. Scientific, not statistical, terminology should be used here. For example, words like ‘association’, ‘effect’, or ‘relationship’ are okay ,while ‘p-value’, ‘coefficient,’ or ‘regression’ are not.
-
-6. Regression Methods:
-
-7. Regression Analysis, Results and Interpretation: 
-
-8. Conclusions (200 words):
-
-9. Appendices:
-
-
 ```{r}
 #importing data
+##我这里加了scatterplot，但是没有av plot
 d1=read.table("student-mat.csv",sep=";",header=TRUE)
+d2 <- subset(d1, G3!=0)
+#plot(d2$G3,  d2$G2)
+lm1 <-lm (G3~G1+G2, data = d2)
+plot(lm1)
+
 ```
 
 ```{r}
 attach(d1)
 #Variable selection I
 #forward selection with aic
-mod.0 <- lm(G3~1, data=d1)
-mod.full <- lm(G3 ~., data=d1) 
+mod.0 <- lm(G3~1, data=d2)
+mod.full <- lm(G3 ~., data=d2) 
 step(mod.0, scope=list(lower=mod.0, upper=mod.full), direction = "forward", trace=0)
-#result: G3 ~ G2 + famrel + absences + G1 + age + activities + Walc + romantic + school
+#result: G3 ~ G2 + G1 + famrel + goout + health + absences + paid
 
 #forward selection with bic
-n <- length(d1$G3)
+n <- length(d2$G3)
 step(mod.0,scope = list(lower=mod.0,upper=mod.full), direction = "forward", k=log(n),trace=0)
-#result: G3 ~ G2 + famrel + absences + G1 + age
+#result: G3 ~ G2 + G1 + famrel
 
 #backward selection with aic
 step(mod.full, scope=list(lower=mod.0, upper=mod.full), direction = "backward", trace=0)
-#result: G3 ~ school + age + activities + romantic + famrel + Walc + absences + G1 + G2
+#result: G3 ~ paid + famrel + goout + health + absences + G1 + G2
 
 #backward selection with bic
 step(mod.full, scope=list(lower=mod.0, upper=mod.full), direction = "backward", k=log(n),trace=0)
-#result: G3 ~ age + famrel + absences + G1 + G2
+#result: G3 ~ famrel + G1 + G2
 
 #stepwise selection
 step(mod.0,scope = list(lower=mod.0,upper=mod.full),trace=0)
-#result: G3 ~ G2 + famrel + absences + G1 + age + activities + Walc + romantic + school
+#result: G3 ~ G2 + G1 + famrel + goout + health + absences + paid
 
 ```
 
 ```{r}
 #scattor plot
-pairs(~G3 + G2 + famrel + absences + G1 + age + activities + Walc + romantic + school)
+pairs(~G3 + G2 + G1 + famrel + goout + health + absences + paid)
 #There might be linear relationship between G3 and G1, G2 and G1, and G2 and G3.
 ```
 
 ```{r}
 #Variable selection II
 library(leaps)
-mod.reg <- regsubsets(cbind(G2, famrel, absences, G1, age, activities, Walc, romantic, school),G3, data=d1)
+mod.reg <- regsubsets(cbind(G2, G1, famrel, goout, health, absences, paid),G3, data=d2)
 summary.reg<- summary(mod.reg)
 summary.reg$which
 
@@ -108,4 +87,42 @@ points(best_bic, summary.reg$bic[best_bic],
 
 ```
 
+
+```{r}
+#AV plots for model with 5 potential predictors
+library(alr4)
+full.5<-lm(G3 ~ G2+G1+famrel+health+absences,data=d2)
+avPlots(full.5, id=FALSE)
+summary(full.5)
+```
+
+```{r}
+#test for outliers
+##这个应该要看你的code
+outlierTest(full.5)
+```
+
+
+```{r}
+#transform
+boxCox(full.5)
+#no need of transformation
+```
+
+```{r}
+##这个也是你的code
+#new clean data set d3
+d3 <-d2[-c(44,46, 62,101,217), ]
+
+full.5.1<-lm(G3 ~ G2+G1+famrel+health+absences,data=d3)
+
+summary(full.5.1)
+plot(full.5.1)
+
+#sbtract predictor health and absences.
+full.5.2<-lm(G3 ~ G2+G1+famrel,data=d3)
+
+summary(full.5.2)
+plot(full.5.2)
+```
 
