@@ -1,7 +1,7 @@
 ---
 title: "126 final project"
 author: "Rebecca Ji, Cindy Liu, Linna He"
-date: "2020/6/8"
+date: "2020/6/12"
 output:
   html_document:
     df_print: paged
@@ -16,14 +16,36 @@ link to the data set: https://archive.ics.uci.edu/ml/datasets/student%2Bperforma
 
 ```{r}
 #importing data
-##我这里加了scatterplot，但是没有av plot
-d1=read.table("student-mat.csv",sep=";",header=TRUE)
-d2 <- subset(d1, G3!=0)
-#plot(d2$G3,  d2$G2)
-lm1 <-lm (G3~G1+G2, data = d2)
-plot(lm1)
-
+d1 <- read.table("student-mat.csv",sep=";",header=TRUE)
 ```
+
+```{r}
+#Exploratory plots of the data
+d2 <- subset(d1, G3!=0)
+par(mfrow = c(1, 2))
+plot(d1$G3,  d1$G2) # we found a series of 0-values in G3 of our d1 dataset, and they got removed in new dataset d2
+plot(d2$G3,  d2$G2)
+lm0 <-lm (G3~G1+G2, data = d1)
+plot(lm0) #violate linearity, equal variance rule and normality. 
+lm1 <-lm (G3~G1+G2, data = d2)
+plot(lm1) #better
+```
+
+```{r}
+#scattor plot
+pairs(~G3 + G2 + G1 + famrel + goout + health + absences + paid)
+pairs(~G3 + G2 + famrel + absences + G1 + age ) #code for figure 1: partial scatter plot
+#There might be linear relationship between G3 and G1, G2 and G1, and G2 and G3.
+```
+
+```{r}
+#AV plots for model with potential predictors based on scatter plot
+library(alr4)
+full.pot<-lm(G3 ~ G2+G1+famrel+health+absences+goout,data=d2)
+avPlots(full.pot, id=FALSE)
+summary(full.pot)
+```
+
 
 ```{r}
 attach(d1)
@@ -53,11 +75,7 @@ step(mod.0,scope = list(lower=mod.0,upper=mod.full),trace=0)
 
 ```
 
-```{r}
-#scattor plot
-pairs(~G3 + G2 + G1 + famrel + goout + health + absences + paid)
-#There might be linear relationship between G3 and G1, G2 and G1, and G2 and G3.
-```
+
 
 ```{r}
 #Variable selection II
@@ -98,31 +116,31 @@ summary(full.5)
 
 ```{r}
 #test for outliers
-##这个应该要看你的code
-outlierTest(full.5)
+par(mfrow = c(1, 2))
+plot(full.5, which = 1)
+plot(full.5, which = 2)
+outlierTest(full.5) #we found several outliers 44,46,62,101,217 in the dataset by looking at the diagnostic plots
+influenceIndexPlot(full.5, vars = c('hat', 'Cook'), id=TRUE)
 ```
 
-
 ```{r}
-#transform
+#check if we need to do transformation
 boxCox(full.5)
-#no need of transformation
+#no need for transformation
 ```
 
 ```{r}
-##这个也是你的code
 #new clean data set d3
-d3 <-d2[-c(44,46, 62,101,217), ]
-
-full.5.1<-lm(G3 ~ G2+G1+famrel+health+absences,data=d3)
-
+d3 <- d2[-c(44,46, 62,101,217), ]
+full.5.1 <- lm(G3 ~ G2 + G1 + famrel + health + absences, data=d3)
 summary(full.5.1)
+par(mfrow = c(1, 2))
 plot(full.5.1)
 
-#sbtract predictor health and absences.
-full.5.2<-lm(G3 ~ G2+G1+famrel,data=d3)
-
-summary(full.5.2)
-plot(full.5.2)
+#remove 2 predictors: absences and health because of the outliers
+full.3<-lm(G3 ~ G2+ G1 + famrel, data=d3)
+summary(full.3)
+plot(full.3)
+anova(full.3)
 ```
 
